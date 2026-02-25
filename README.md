@@ -97,6 +97,12 @@ State key path is set by prefix + workflow input environment:
 
 Where `<prefix>` is `TF_STATE_PREFIX` if set, otherwise the GitHub repo name (for example `terraform-labs`).
 
+For local `mise run terraform:init`:
+
+- Init always configures the S3 backend.
+- Defaults are set in `mise.toml` (`TF_STATE_BUCKET=tfstate-llewandowski`, `TF_STATE_PREFIX=terraform-labs`, `TF_STATE_ENV=dev`).
+- Override `TF_STATE_PREFIX` or `TF_STATE_ENV` per workspace/environment as needed.
+
 ### Re-enable strict TFLint rules
 
 Re-enable these rules in `.tflint.hcl` when the scaffold grows into real infrastructure:

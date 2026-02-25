@@ -19,11 +19,23 @@ TF_PLUGIN_CACHE_DIR = ".terraform.d/plugin-cache"
 
 # Optional defaults (I’d keep REGION, but avoid forcing PROFILE in repo)
 AWS_REGION = "us-east-1"
+TF_STATE_BUCKET = "tfstate-llewandowski"
+TF_STATE_PREFIX = "terraform-labs"
+TF_STATE_ENV = "dev"
 # AWS_PROFILE = "dev"
 
 [tasks."terraform:init"]
 description = "Initializes Terraform"
-run = "mkdir -p .terraform.d/plugin-cache && terraform -chdir=${TF_DIR} init -input=false"
+run = """
+mkdir -p .terraform.d/plugin-cache
+terraform -chdir=${TF_DIR} init -input=false \
+	-reconfigure \
+	-backend-config=bucket=${TF_STATE_BUCKET} \
+	-backend-config=key=${TF_STATE_PREFIX}/${TF_STATE_ENV}/terraform.tfstate \
+	-backend-config=region=${AWS_REGION} \
+	-backend-config=encrypt=true \
+	-backend-config=use_lockfile=true
+"""
 
 [tasks."terraform:fmt"]
 description = "Formats Terraform files (writes changes)"
