@@ -64,6 +64,11 @@ mise run check
 mise run check:ci
 ```
 
+Template baseline note:
+
+- `infra/main.tf` is intentionally minimal and does not create default AWS infrastructure.
+- Add your own resources or internal modules under `infra/` and `modules/`.
+
 Checkov task behavior:
 
 - `checkov:scan` / `checkov:sarif`: blocking scans for owned code (excludes `infra/.external_modules`).

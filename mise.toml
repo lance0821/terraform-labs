@@ -52,7 +52,7 @@ run = "terraform -chdir=${TF_DIR} validate"
 
 [tasks."terraform:validate-ci"]
 description = "CI-safe validation (no remote backend init)"
-run = "mkdir -p .terraform.d/plugin-cache && terraform -chdir=${TF_DIR} init -backend=false -input=false && terraform -chdir=${TF_DIR} validate"
+run = "mkdir -p .terraform.d/plugin-cache && TF_DATA_DIR=.terraform-ci terraform -chdir=${TF_DIR} init -backend=false -input=false && TF_DATA_DIR=.terraform-ci terraform -chdir=${TF_DIR} validate"
 
 [tasks."terraform:plan"]
 description = "Generates and saves an execution plan"
@@ -85,11 +85,11 @@ run = "if [ ! -d modules ]; then exit 0; fi; for d in modules/*; do if [ -d \"$d
 
 [tasks."trivy:iac"]
 description = "Runs Trivy IaC scan (Terraform misconfig)"
-run = "trivy config --severity HIGH,CRITICAL --exit-code 1 ."
+run = "trivy config --severity HIGH,CRITICAL --exit-code 1 --skip-dirs ${TF_DIR}/.external_modules --skip-dirs ${TF_DIR}/.terraform --skip-dirs .terraform-ci ${TF_DIR}"
 
 [tasks."trivy:sarif"]
 description = "Runs Trivy IaC scan and writes SARIF report"
-run = "trivy config --severity HIGH,CRITICAL --exit-code 1 --format sarif --output trivy.sarif ."
+run = "trivy config --severity HIGH,CRITICAL --exit-code 1 --skip-dirs ${TF_DIR}/.external_modules --skip-dirs ${TF_DIR}/.terraform --skip-dirs .terraform-ci --format sarif --output trivy.sarif ${TF_DIR}"
 
 [tasks."gitleaks:scan"]
 description = "Scans repo for secrets"

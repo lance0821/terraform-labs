@@ -11,9 +11,3 @@ download-external-modules: true
 # Example (disabled by default):
 # skip-check:
 #   - CKV_AWS_20 # Example only: replace with a real ID and documented rationale.
-
-# Targeted exception:
-# We intentionally use Terraform Registry source + semver in modules/vpc for maintainability.
-# CKV_TF_1 expects git commit pinning and is not aligned with this repository policy.
-skip-check:
-  - CKV_TF_1:modules/vpc/main.tf
