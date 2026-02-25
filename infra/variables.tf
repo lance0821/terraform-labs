@@ -1,3 +1,9 @@
+variable "region" {
+  type        = string
+  description = "AWS region for all resources."
+  default     = "us-east-1"
+}
+
 variable "project_name" {
   type        = string
   description = "Short project slug for naming."
@@ -13,13 +19,18 @@ variable "environment" {
 }
 
 variable "extra_tags" {
-  type    = map(string)
-  default = {}
+  type        = map(string)
+  description = "Additional tags merged into all resources."
+  default     = {}
 }
 
 variable "vpc_cidr" {
   type        = string
   description = "CIDR block for the VPC."
+  validation {
+    condition     = can(cidrhost(var.vpc_cidr, 0))
+    error_message = "vpc_cidr must be a valid CIDR block (e.g. 10.0.0.0/16)."
+  }
 }
 
 variable "vpc_azs" {

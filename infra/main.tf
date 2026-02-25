@@ -1,5 +1,12 @@
+check “nat_gateway_config” {
+  assert {
+    condition     = !(var.single_nat_gateway && var.one_nat_gateway_per_az)
+    error_message = “single_nat_gateway and one_nat_gateway_per_az are mutually exclusive.”
+  }
+}
+
 # Intentionally minimal: no “surprise” AWS resources in a template.
-data "aws_caller_identity" "current" {}
+data “aws_caller_identity” “current” {}
 
 module "vpc" {
   source = "../modules/vpc"
