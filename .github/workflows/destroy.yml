@@ -1,4 +1,4 @@
-name: Deploy (Terraform Apply)
+name: Destroy (Terraform)
 
 on:
   workflow_dispatch:
@@ -13,19 +13,19 @@ on:
           - staging
           - prod
       confirm:
-        description: "Type APPLY (or APPLY-PROD for prod)"
+        description: "Type DESTROY (or DESTROY-PROD for prod)"
         required: true
         type: string
 
 permissions: {}
 
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: destroy-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  apply:
-    if: ${{ vars.ENABLE_DEPLOY == 'true' && github.ref == 'refs/heads/main' && ((inputs.environment != 'prod' && inputs.confirm == 'APPLY') || (inputs.environment == 'prod' && inputs.confirm == 'APPLY-PROD')) }}
+  destroy:
+    if: ${{ vars.ENABLE_DEPLOY == 'true' && github.ref == 'refs/heads/main' && ((inputs.environment != 'prod' && inputs.confirm == 'DESTROY') || (inputs.environment == 'prod' && inputs.confirm == 'DESTROY-PROD')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: ${{ inputs.environment }}
@@ -61,5 +61,8 @@ jobs:
       - name: Terraform Init
         run: terraform -chdir=infra init -input=false -no-color
 
-      - name: Terraform Apply
-        run: terraform -chdir=infra apply -input=false -auto-approve -no-color
+      - name: Terraform Plan (destroy)
+        run: terraform -chdir=infra plan -destroy -input=false -no-color
+
+      - name: Terraform Destroy
+        run: terraform -chdir=infra destroy -input=false -auto-approve -no-color
