@@ -70,6 +70,33 @@ mise run check:ci
 - Keep suppressions minimal, time-bound, and reviewed regularly.
 - Checkov policy is configured in `.checkov.yml`; TFLint policy is configured in `.tflint.hcl`.
 
+### Remote state (S3 backend)
+
+`infra/backend.tf` uses an S3 backend with runtime backend config.
+
+Set these GitHub repository or environment variables before running deploy/destroy workflows:
+
+- `TF_STATE_BUCKET` (required): S3 bucket name for Terraform state.
+- `TF_STATE_PREFIX` (optional): Prefix under the bucket. Defaults to GitHub repository name.
+- `AWS_ROLE_TO_ASSUME` (required): IAM role ARN for OIDC auth.
+
+For this repository, set `TF_STATE_BUCKET=tfstate-llewandowski`.
+
+Locking is configured with S3 native lockfiles (`use_lockfile=true`), so no DynamoDB table is required.
+
+Bucket requirements (configure on the S3 bucket itself):
+
+- Versioning enabled.
+- Default encryption enabled (SSE-S3 or SSE-KMS).
+
+State key path is set by prefix + workflow input environment:
+
+- `<prefix>/dev/terraform.tfstate`
+- `<prefix>/staging/terraform.tfstate`
+- `<prefix>/prod/terraform.tfstate`
+
+Where `<prefix>` is `TF_STATE_PREFIX` if set, otherwise the GitHub repo name (for example `terraform-labs`).
+
 ### Re-enable strict TFLint rules
 
 Re-enable these rules in `.tflint.hcl` when the scaffold grows into real infrastructure:

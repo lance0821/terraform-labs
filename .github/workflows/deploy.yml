@@ -38,6 +38,9 @@ jobs:
     env:
       TF_IN_AUTOMATION: "true"
       AWS_REGION: us-east-1
+      TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+      TF_STATE_PREFIX: ${{ vars.TF_STATE_PREFIX || github.event.repository.name }}
+      TF_STATE_KEY: ${{ format('{0}/{1}/terraform.tfstate', vars.TF_STATE_PREFIX || github.event.repository.name, inputs.environment) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
@@ -59,7 +62,18 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
-        run: terraform -chdir=infra init -input=false -no-color
+        run: |
+          set -euo pipefail
+          : "${TF_STATE_BUCKET:?Set TF_STATE_BUCKET in repo or environment variables}"
+          mkdir -p .terraform.d/plugin-cache
+          BACKEND_ARGS=(
+            "-backend-config=bucket=${TF_STATE_BUCKET}"
+            "-backend-config=key=${TF_STATE_KEY}"
+            "-backend-config=region=${AWS_REGION}"
+            "-backend-config=encrypt=true"
+            "-backend-config=use_lockfile=true"
+          )
+          terraform -chdir=infra init -input=false -no-color "${BACKEND_ARGS[@]}"
 
       - name: Terraform Apply
         run: terraform -chdir=infra apply -input=false -auto-approve -no-color
