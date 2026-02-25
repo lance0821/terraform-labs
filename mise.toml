@@ -1,44 +1,104 @@
 [tools]
-terraform = '1.14.5'
+terraform = "1.14.5"
 aws-cli = "2"
+tflint = "latest"
+trivy = "latest"
+gitleaks = "latest"
+terraform-docs = "latest"
+checkov = "latest"
+
+[env]
+_.file = ".env"
+
+# Prefer TF_DIR so you can rename terraform/ -> infra/ later
+TF_DIR = "infra"
+
+# Helpful defaults
+TF_IN_AUTOMATION = "true"
+TF_PLUGIN_CACHE_DIR = ".terraform.d/plugin-cache"
+
+# Optional defaults (I’d keep REGION, but avoid forcing PROFILE in repo)
+AWS_REGION = "us-east-1"
+# AWS_PROFILE = "dev"
 
 [tasks."terraform:init"]
-description = "Initializes a Terraform working directory"
-run = "terraform -chdir=terraform init"
+description = "Initializes Terraform"
+run = "mkdir -p .terraform.d/plugin-cache && terraform -chdir=${TF_DIR} init -input=false"
+
+[tasks."terraform:fmt"]
+description = "Formats Terraform files (writes changes)"
+run = "terraform -chdir=${TF_DIR} fmt -recursive"
+
+[tasks."terraform:fmt-check"]
+description = "Checks Terraform formatting (no changes)"
+run = "terraform -chdir=${TF_DIR} fmt -check -recursive"
+
+[tasks."terraform:validate"]
+description = "Validates Terraform configuration"
+depends = ["terraform:init"]
+run = "terraform -chdir=${TF_DIR} validate"
+
+[tasks."terraform:validate-ci"]
+description = "CI-safe validation (no remote backend init)"
+run = "mkdir -p .terraform.d/plugin-cache && terraform -chdir=${TF_DIR} init -backend=false -input=false && terraform -chdir=${TF_DIR} validate"
 
 [tasks."terraform:plan"]
-description = "Generates an execution plan for Terraform"
-run = "terraform -chdir=terraform plan"
+description = "Generates and saves an execution plan"
+depends = ["terraform:init"]
+run = "terraform -chdir=${TF_DIR} plan -input=false -out=tfplan"
 
 [tasks."terraform:apply"]
-description = "Applies the changes required to reach the desired state of the configuration"
-run = "terraform -chdir=terraform apply"
+description = "Applies the saved plan"
+depends = ["terraform:plan"]
+run = "terraform -chdir=${TF_DIR} apply -input=false tfplan"
 
 [tasks."terraform:destroy"]
 description = "Destroy Terraform-managed infrastructure"
-run = "terraform -chdir=terraform destroy"
+depends = ["terraform:init"]
+run = "terraform -chdir=${TF_DIR} destroy -input=false"
 
-[tasks."terraform:validate"]
-description = "Validates the Terraform files"
-run = "terraform -chdir=terraform validate"
+[tasks."tflint:init"]
+description = "Initializes TFLint plugins"
+run = "tflint --init --config=.tflint.hcl"
 
-[tasks."terraform:format"]
-description = "Formats the Terraform files"
-run = "terraform -chdir=terraform fmt"
+[tasks."tflint:run"]
+description = "Runs TFLint against the project"
+depends = ["tflint:init"]
+run = "tflint --chdir=${TF_DIR} --config=../.tflint.hcl"
 
-[tasks."terraform:check"]
-description = "Checks the Terraform files"
-depends = ["terraform:format", "terraform:validate"]
+[tasks."tflint:modules"]
+description = "Runs TFLint against Terraform modules (if modules/ exists)"
+depends = ["tflint:init"]
+run = "if [ ! -d modules ]; then exit 0; fi; for d in modules/*; do if [ -d \"$d\" ] && ls \"$d\"/*.tf >/dev/null 2>&1; then tflint --chdir=\"$d\" --config=../.tflint.hcl; fi; done"
 
-[tasks."aws:configure"]
-description = "Configure AWS credentials/profile"
-run = "aws configure"
+[tasks."trivy:iac"]
+description = "Runs Trivy IaC scan (Terraform misconfig)"
+run = "trivy config --severity HIGH,CRITICAL --exit-code 1 ."
+
+[tasks."trivy:sarif"]
+description = "Runs Trivy IaC scan and writes SARIF report"
+run = "trivy config --severity HIGH,CRITICAL --exit-code 1 --format sarif --output trivy.sarif ."
+
+[tasks."gitleaks:scan"]
+description = "Scans repo for secrets"
+run = "gitleaks detect --redact --no-git"
+
+[tasks."checkov:scan"]
+description = "Runs Checkov scan against Terraform configuration"
+run = "checkov --config-file .checkov.yml -d ${TF_DIR}"
+
+[tasks."checkov:sarif"]
+description = "Runs Checkov scan and writes SARIF report"
+run = "checkov --config-file .checkov.yml -d ${TF_DIR} -o sarif --output-file-path checkov.sarif"
+
+[tasks."check"]
+description = "Project checks (non-destructive)"
+depends = ["terraform:fmt-check", "terraform:validate", "tflint:run", "trivy:iac", "checkov:scan", "gitleaks:scan"]
+
+[tasks."check:ci"]
+description = "CI checks (backend-safe validation + SARIF output)"
+depends = ["terraform:fmt-check", "terraform:validate-ci", "tflint:run", "tflint:modules", "trivy:sarif", "checkov:sarif", "gitleaks:scan"]
 
 [tasks."aws:whoami"]
 description = "Show active AWS identity"
 run = "aws sts get-caller-identity"
-
-[env]
-_.file = ".env"
-AWS_REGION = "us-east-1"
-AWS_PROFILE = "dev"

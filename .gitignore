@@ -1,0 +1,17 @@
+.terraform/
+.terraform.d/
+
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+trivy.sarif
+checkov.sarif
+
+*.tfvars.json
+
+.env
+.env.*
+
+.DS_Store
+Thumbs.db

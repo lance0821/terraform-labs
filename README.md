@@ -56,5 +56,24 @@ mise run terraform:plan
 mise run terraform:apply
 mise run terraform:destroy
 mise run terraform:validate
-mise run terraform:format
+mise run terraform:validate-ci
+mise run terraform:fmt
+mise run checkov:scan
+mise run check
+mise run check:ci
 ```
+
+### Security checks policy
+
+- Prefer fixing findings instead of suppressing checks.
+- If suppression is required, scope it to specific check IDs and document rationale in the PR.
+- Keep suppressions minimal, time-bound, and reviewed regularly.
+- Checkov policy is configured in `.checkov.yml`; TFLint policy is configured in `.tflint.hcl`.
+
+### Re-enable strict TFLint rules
+
+Re-enable these rules in `.tflint.hcl` when the scaffold grows into real infrastructure:
+
+- `terraform_unused_declarations`: re-enable once locals/variables are actively consumed by resources or modules.
+- `terraform_unused_required_providers`: re-enable once `required_providers` only lists providers used in code.
+- Run `mise run check` after re-enabling to verify no regressions.
