@@ -109,6 +109,25 @@ For local `mise run terraform:init`:
 - Defaults are set in `mise.toml` (`TF_STATE_BUCKET=tfstate-llewandowski`, `TF_STATE_PREFIX=terraform-labs`, `TF_STATE_ENV=dev`).
 - Override `TF_STATE_PREFIX` or `TF_STATE_ENV` per workspace/environment as needed.
 
+### Template bootstrap for new repos
+
+Use the bootstrap script to configure AWS OIDC trust + GitHub environments/variables for a new repository created from this template.
+
+```bash
+./scripts/bootstrap-template-repo.sh \
+	--repo <owner/new-repo> \
+	--aws-profile dev \
+	--state-bucket tfstate-llewandowski
+```
+
+Defaults:
+
+- Role name: `GitHubActionsTerraformDeploy`
+- Region: `us-east-1`
+- State prefix: repository name
+
+After bootstrap, run the `Deploy (Terraform Apply)` workflow manually with `environment=dev` and `confirm=APPLY`.
+
 ### Re-enable strict TFLint rules
 
 Re-enable these rules in `.tflint.hcl` when the scaffold grows into real infrastructure:
