@@ -59,9 +59,15 @@ mise run terraform:validate
 mise run terraform:validate-ci
 mise run terraform:fmt
 mise run checkov:scan
+mise run checkov:scan-all
 mise run check
 mise run check:ci
 ```
+
+Checkov task behavior:
+
+- `checkov:scan` / `checkov:sarif`: blocking scans for owned code (excludes `infra/.external_modules`).
+- `checkov:scan-all` / `checkov:sarif-all`: advisory scans including downloaded community module code.
 
 ### Security checks policy
 

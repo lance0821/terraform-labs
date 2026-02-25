@@ -81,7 +81,7 @@ run = "tflint --chdir=${TF_DIR} --config=../.tflint.hcl"
 [tasks."tflint:modules"]
 description = "Runs TFLint against Terraform modules (if modules/ exists)"
 depends = ["tflint:init"]
-run = "if [ ! -d modules ]; then exit 0; fi; for d in modules/*; do if [ -d \"$d\" ] && ls \"$d\"/*.tf >/dev/null 2>&1; then tflint --chdir=\"$d\" --config=../.tflint.hcl; fi; done"
+run = "if [ ! -d modules ]; then exit 0; fi; for d in modules/*; do if [ -d \"$d\" ] && ls \"$d\"/*.tf >/dev/null 2>&1; then terraform -chdir=\"$d\" init -backend=false -input=false >/dev/null && tflint --chdir=\"$d\" --config=../../.tflint.hcl; fi; done"
 
 [tasks."trivy:iac"]
 description = "Runs Trivy IaC scan (Terraform misconfig)"
@@ -93,15 +93,23 @@ run = "trivy config --severity HIGH,CRITICAL --exit-code 1 --format sarif --outp
 
 [tasks."gitleaks:scan"]
 description = "Scans repo for secrets"
-run = "gitleaks detect --redact --no-git"
+run = "gitleaks detect --redact --no-git --config .gitleaks.toml"
 
 [tasks."checkov:scan"]
-description = "Runs Checkov scan against Terraform configuration"
-run = "checkov --config-file .checkov.yml -d ${TF_DIR}"
+description = "Runs Checkov scan against owned Terraform code (excludes vendored external modules)"
+run = "checkov --config-file .checkov.yml -d ${TF_DIR} --download-external-modules false"
 
 [tasks."checkov:sarif"]
-description = "Runs Checkov scan and writes SARIF report"
-run = "checkov --config-file .checkov.yml -d ${TF_DIR} -o sarif --output-file-path checkov.sarif"
+description = "Runs Checkov scan on owned code and writes SARIF report"
+run = "checkov --config-file .checkov.yml -d ${TF_DIR} --download-external-modules false -o sarif --output-file-path checkov.sarif"
+
+[tasks."checkov:scan-all"]
+description = "Advisory Checkov scan including downloaded external modules"
+run = "checkov --config-file .checkov.yml -d ${TF_DIR} --download-external-modules true"
+
+[tasks."checkov:sarif-all"]
+description = "Advisory Checkov SARIF including downloaded external modules"
+run = "checkov --config-file .checkov.yml -d ${TF_DIR} --download-external-modules true -o sarif --output-file-path checkov-all.sarif || true"
 
 [tasks."check"]
 description = "Project checks (non-destructive)"

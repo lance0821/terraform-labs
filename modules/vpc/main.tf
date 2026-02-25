@@ -16,6 +16,10 @@ module "this" {
   enable_dns_support   = var.enable_dns_support
   enable_dns_hostnames = var.enable_dns_hostnames
 
+  manage_default_security_group = true
+  default_security_group_ingress = []
+  default_security_group_egress  = []
+
   tags                = var.tags
   public_subnet_tags  = var.public_subnet_tags
   private_subnet_tags = var.private_subnet_tags
